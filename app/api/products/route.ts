@@ -3,7 +3,6 @@ import { productService } from '@/lib/products';
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
-
   const filters = {
     category: searchParams.get('category') || undefined,
     subCategory: searchParams.get('subCategory') || undefined,
@@ -12,17 +11,15 @@ export async function GET(request: NextRequest) {
     offset: searchParams.get('offset') ? Math.max(parseInt(searchParams.get('offset')!), 0) : 0,
   };
 
-  const products = productService.getAll(filters);
-  const total = productService.getTotalCount({
-    category: filters.category,
-    subCategory: filters.subCategory,
-    search: filters.search,
-  });
-
-  return NextResponse.json({
-    products,
-    total,
-    limit: filters.limit,
-    offset: filters.offset,
-  });
+  try {
+    const products = productService.getAll(filters);
+    const total = productService.getTotalCount({
+      category: filters.category,
+      subCategory: filters.subCategory,
+      search: filters.search,
+    });
+    return NextResponse.json({ products, total, limit: filters.limit, offset: filters.offset });
+  } catch {
+    return NextResponse.json({ error: 'Failed to fetch products' }, { status: 500 });
+  }
 }
