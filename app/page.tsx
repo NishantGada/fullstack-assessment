@@ -55,14 +55,16 @@ export default function Home() {
   useEffect(() => {
     fetch("/api/categories")
       .then((res) => res.json())
-      .then((data) => setCategories(data.categories));
+      .then((data) => setCategories(data.categories))
+      .catch(() => setCategories([]));
   }, []);
 
   useEffect(() => {
     if (selectedCategory) {
       fetch(`/api/subcategories?category=${selectedCategory}`)
         .then((res) => res.json())
-        .then((data) => setSubCategories(data.subCategories));
+        .then((data) => setSubCategories(data.subCategories))
+        .catch(() => setSubCategories([]));
     } else {
       setSubCategories([]);
       setSelectedSubCategory(undefined);
@@ -81,6 +83,10 @@ export default function Home() {
       .then((res) => res.json())
       .then((data) => {
         setProducts(data.products);
+        setLoading(false);
+      })
+      .catch(() => {
+        setProducts([]);
         setLoading(false);
       });
   }, [debouncedSearch, selectedCategory, selectedSubCategory]);
