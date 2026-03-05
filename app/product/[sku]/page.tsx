@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -16,27 +15,49 @@ interface Product {
   subCategoryName: string;
   imageUrls: string[];
   featureBullets: string[];
-  retailerSku: string;
 }
 
-export default function ProductPage() {
-  const searchParams = useSearchParams();
-  const productParam = searchParams.get('product');
+export default function ProductPage({ params }: { params: Promise<{ sku: string }> }) {
   const [product, setProduct] = useState<Product | null>(null);
   const [selectedImage, setSelectedImage] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
-    if (productParam) {
-      try {
-        const parsedProduct = JSON.parse(productParam);
-        setProduct(parsedProduct);
-      } catch (error) {
-        console.error('Failed to parse product data:', error);
-      }
-    }
-  }, [productParam]);
+    params.then(({ sku }) => {
+      fetch(`/api/products/${sku}`)
+        .then((res) => {
+          if (!res.ok) throw new Error('Product not found');
+          return res.json();
+        })
+        .then((data) => {
+          setProduct(data);
+          setLoading(false);
+        })
+        .catch(() => {
+          setError(true);
+          setLoading(false);
+        });
+    });
+  }, [params]);
 
-  if (!product) {
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <div className="container mx-auto px-4 py-8">
+          <Link href="/">
+            <Button variant="ghost" className="mb-4">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Products
+            </Button>
+          </Link>
+          <p className="text-center text-muted-foreground py-12">Loading product...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !product) {
     return (
       <div className="min-h-screen bg-background">
         <div className="container mx-auto px-4 py-8">
@@ -87,7 +108,7 @@ export default function ProductPage() {
               <div className="grid grid-cols-4 gap-2">
                 {product.imageUrls.map((url, idx) => (
                   <button
-                    key={idx}
+                    key={url}
                     onClick={() => setSelectedImage(idx)}
                     className={`relative h-20 border-2 rounded-lg overflow-hidden ${
                       selectedImage === idx ? 'border-primary' : 'border-muted'
@@ -113,7 +134,7 @@ export default function ProductPage() {
                 <Badge variant="outline">{product.subCategoryName}</Badge>
               </div>
               <h1 className="text-3xl font-bold mb-2">{product.title}</h1>
-              <p className="text-sm text-muted-foreground">SKU: {product.retailerSku}</p>
+              <p className="text-sm text-muted-foreground">SKU: {product.stacklineSku}</p>
             </div>
 
             {product.featureBullets.length > 0 && (
